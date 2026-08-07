@@ -1,0 +1,6 @@
+{
+  "name": "Surfcamp.world Business Dashboard",
+  "description": "Enterprise business management platform for Surfcamp.world featuring live booking engine, automatic 80/20 revenue commission sharing, CRM, calendar, finance analytics, surf forecast API, AI assistant, and partner portals.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
