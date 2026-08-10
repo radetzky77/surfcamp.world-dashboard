@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import path from 'path';
 import { GoogleGenAI } from '@google/genai';
@@ -70,43 +71,48 @@ Provide concise, actionable executive advice, revenue forecasts, or customer seg
     }
   });
 
-  // 3. Live Marine Surf Forecast API (Proxies to Open-Meteo Marine API or returns accurate spots)
+  // 3. Live Marine Surf Forecast API (Proxies to Open-Meteo Marine API for surfcamp.world spots)
   app.get('/api/surf-forecast', async (req, res) => {
     try {
       const spots = [
-        { lat: 38.9625, lng: -9.4172, name: "Supertubos & Ribeira d'Ilhas", country: "Portugal" },
-        { lat: 30.5426, lng: -9.7088, name: "Anchor Point", country: "Morocco" },
-        { lat: -8.6500, lng: 115.1333, name: "Canggu Echo Beach", country: "Indonesia" },
-        { lat: 9.9818, lng: -85.6738, name: "Playa Guiones", country: "Costa Rica" },
+        { id: 'spot_pt_01', lat: 38.9625, lng: -9.4172, name: "Supertubos & Ribeira d'Ilhas", country: "Portugal", location: "Ericeira" },
+        { id: 'spot_ma_02', lat: 30.5426, lng: -9.7088, name: "Anchor Point", country: "Morocco", location: "Taghazout" },
+        { id: 'spot_id_03', lat: -8.6500, lng: 115.1333, name: "Canggu Echo Beach", country: "Indonesia", location: "Bali" },
+        { id: 'spot_cr_04', lat: 9.9818, lng: -85.6738, name: "Playa Guiones", country: "Costa Rica", location: "Nosara" },
       ];
 
-      // Try live open-meteo query for Portugal spot as live sample
-      const marineUrl = `https://marine-api.open-meteo.com/v1/marine?latitude=38.9625&longitude=-9.4172&hourly=wave_height,wave_period,wave_direction&timezone=auto`;
+      // Query live open-meteo marine API for the primary spot
+      const targetSpot = spots[0];
+      const marineUrl = `https://marine-api.open-meteo.com/v1/marine?latitude=${targetSpot.lat}&longitude=${targetSpot.lng}&hourly=wave_height,wave_period,wave_direction&timezone=auto`;
       const response = await fetch(marineUrl).catch(() => null);
 
       if (response && response.ok) {
         const data = await response.json();
         const currentHour = new Date().getHours();
-        const waveHeight = data.hourly?.wave_height?.[currentHour] || 2.1;
-        const wavePeriod = data.hourly?.wave_period?.[currentHour] || 14;
+        const waveHeight = Number((data.hourly?.wave_height?.[currentHour] || 2.1).toFixed(1));
+        const wavePeriod = Math.round(data.hourly?.wave_period?.[currentHour] || 14);
 
         return res.json({
           status: 'live_marine_api',
-          spot: "Supertubos & Ribeira d'Ilhas",
+          website: 'https://surfcamp.world',
+          spot: targetSpot.name,
+          country: targetSpot.country,
           waveHeightM: waveHeight,
           wavePeriodSec: wavePeriod,
           swellDirection: 'WNW (290°)',
           waterTempC: 18,
           tide: 'Mid-Tide Rising',
           windSpeedKts: 8,
-          condition: waveHeight > 2 ? 'Epic' : 'Good',
+          condition: waveHeight > 2.0 ? 'Epic' : waveHeight > 1.2 ? 'Good' : 'Fair',
           timestamp: new Date().toISOString(),
         });
       }
 
       res.json({
         status: 'cached_marine',
-        spot: "Supertubos & Ribeira d'Ilhas",
+        website: 'https://surfcamp.world',
+        spot: targetSpot.name,
+        country: targetSpot.country,
         waveHeightM: 2.1,
         wavePeriodSec: 14,
         swellDirection: 'WNW (290°)',
@@ -119,6 +125,7 @@ Provide concise, actionable executive advice, revenue forecasts, or customer seg
     } catch (err: any) {
       res.json({
         status: 'fallback',
+        website: 'https://surfcamp.world',
         spot: "Supertubos & Ribeira d'Ilhas",
         waveHeightM: 2.1,
         wavePeriodSec: 14,
@@ -341,6 +348,122 @@ CREATE INDEX IF NOT EXISTS idx_customers_email ON public.customers(email);
     res.setHeader('Content-Type', 'text/plain');
     res.setHeader('Content-Disposition', 'attachment; filename=surfcamp_supabase_schema.sql');
     res.send(sqlSchema);
+  });
+
+  // Demo Partner Seed API for testing Demo Surf Camp
+  app.get('/api/partner/demo-seed', (req, res) => {
+    res.json({
+      user: {
+        id: 'usr_demo_partner_01',
+        name: 'Alexandre Silva (Demo Owner)',
+        email: 'demo.partner@surfcamp.world',
+        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=250&q=80',
+        role: 'partner',
+        partnerId: 'prt_demo_01',
+        phone: '+351 912 888 777',
+      },
+      partner: {
+        id: 'prt_demo_01',
+        companyName: 'Demo Surf Camp & Ocean Lodge',
+        ownerName: 'Alexandre Silva',
+        country: 'Portugal',
+        location: 'Ericeira World Surf Reserve',
+        businessAddress: 'Rua das Ondas 42, Ericeira, 2655-000, Portugal',
+        taxVatId: 'PT509876543',
+        website: 'https://surfcamp.world',
+        lat: 38.9625,
+        lng: -9.4172,
+        bankDetails: {
+          bankName: 'Banco BPI Portugal',
+          iban: 'PT50 0010 0000 1234 5678 9012 3',
+          swift: 'BPIPPTPL',
+          accountHolder: 'Demo Surf Camp Lda',
+        },
+        commissionRate: 0.20,
+        contractStatus: 'active',
+        approvalStatus: 'approved',
+        rating: 4.95,
+        totalBookings: 14,
+        totalRevenue: 18400,
+        totalPayout: 14720,
+        photos: [
+          'https://images.unsplash.com/photo-1502680390469-be75c86b636f?auto=format&fit=crop&w=800&q=80',
+          'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80',
+          'https://images.unsplash.com/photo-1537519646099-335112f03225?auto=format&fit=crop&w=800&q=80',
+        ],
+        phone: '+351 912 888 777',
+        email: 'demo.partner@surfcamp.world',
+        description: 'Luxury oceanfront partner surf villa with daily guided surf trips to Supertubos & Ribeira d\'Ilhas.',
+      },
+      bookings: [
+        {
+          id: 'bkg_demo_01',
+          bookingNumber: 'SW-88102',
+          customerId: 'cust_demo_01',
+          customerName: 'Marcus Vance',
+          customerEmail: 'marcus.vance@example.com',
+          customerPhone: '+44 7700 900123',
+          partnerId: 'prt_demo_01',
+          partnerName: 'Demo Surf Camp & Ocean Lodge',
+          campName: 'Demo Surf Camp & Ocean Lodge',
+          accommodationId: 'acc_01',
+          roomType: 'Deluxe Ocean View Suite',
+          checkIn: '2026-08-15',
+          checkOut: '2026-08-22',
+          guests: 2,
+          extras: [],
+          grossTotal: 1800,
+          discountAmount: 0,
+          netTotal: 1800,
+          partnerPayout: 1440, // 80%
+          platformRevenue: 360, // 20%
+          discountCost: 0,
+          taxAmount: 234,
+          netProfit: 360,
+          profitMargin: 20,
+          status: 'confirmed',
+          paymentStatus: 'paid',
+          paymentMethod: 'stripe',
+          googleCalendarSynced: true,
+          createdAt: new Date().toISOString(),
+          timeline: [],
+          notes: 'Guest requested intermediate surf coaching.',
+        },
+        {
+          id: 'bkg_demo_02',
+          bookingNumber: 'SW-88103',
+          customerId: 'cust_demo_02',
+          customerName: 'Sophie Dubois',
+          customerEmail: 'sophie.d@example.com',
+          customerPhone: '+33 6 12 34 56 78',
+          partnerId: 'prt_demo_01',
+          partnerName: 'Demo Surf Camp & Ocean Lodge',
+          campName: 'Demo Surf Camp & Ocean Lodge',
+          accommodationId: 'acc_01',
+          roomType: 'Sunset Private Double Room',
+          checkIn: '2026-08-20',
+          checkOut: '2026-08-27',
+          guests: 1,
+          extras: [],
+          grossTotal: 1250,
+          discountAmount: 0,
+          netTotal: 1250,
+          partnerPayout: 1000, // 80%
+          platformRevenue: 250, // 20%
+          discountCost: 0,
+          taxAmount: 162,
+          netProfit: 250,
+          profitMargin: 20,
+          status: 'confirmed',
+          paymentStatus: 'paid',
+          paymentMethod: 'stripe',
+          googleCalendarSynced: true,
+          createdAt: new Date().toISOString(),
+          timeline: [],
+          notes: 'Beginner package with wetsuit rental.',
+        },
+      ],
+    });
   });
 
   // 7. Docker and CI/CD Export

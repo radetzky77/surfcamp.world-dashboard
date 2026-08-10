@@ -59,24 +59,39 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
   const pendingPayments = bookings.filter((b) => b.paymentStatus === 'pending');
   const pendingAmount = pendingPayments.reduce((sum, b) => sum + b.netTotal, 0);
 
-  // Financial Chart Data
-  const monthlyData = [
-    { month: 'Jan', revenue: 68000, partnerPayout: 54400, platformNet: 13600 },
-    { month: 'Feb', revenue: 74000, partnerPayout: 59200, platformNet: 14800 },
-    { month: 'Mar', revenue: 89000, partnerPayout: 71200, platformNet: 17800 },
-    { month: 'Apr', revenue: 105000, partnerPayout: 84000, platformNet: 21000 },
-    { month: 'May', revenue: 122000, partnerPayout: 97600, platformNet: 24400 },
-    { month: 'Jun', revenue: 145000, partnerPayout: 116000, platformNet: 29000 },
-    { month: 'Jul', revenue: 168000, partnerPayout: 134400, platformNet: 33600 },
-    { month: 'Aug (Cur)', revenue: 184500, partnerPayout: 147600, platformNet: 36900 },
-  ];
+  // Financial Chart Data dynamically calculated from bookings
+  const monthlyData = bookings.length > 0
+    ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'].map((m) => {
+        const monthBookings = bookings.filter((b) => b.checkIn.includes(m));
+        const rev = monthBookings.reduce((sum, b) => sum + b.netTotal, 0);
+        const payout = monthBookings.reduce((sum, b) => sum + b.partnerPayout, 0);
+        const platformNet = monthBookings.reduce((sum, b) => sum + b.platformRevenue, 0);
+        return { month: m, revenue: rev, partnerPayout: payout, platformNet };
+      })
+    : [
+        { month: 'Jan', revenue: 0, partnerPayout: 0, platformNet: 0 },
+        { month: 'Feb', revenue: 0, partnerPayout: 0, platformNet: 0 },
+        { month: 'Mar', revenue: 0, partnerPayout: 0, platformNet: 0 },
+        { month: 'Apr', revenue: 0, partnerPayout: 0, platformNet: 0 },
+        { month: 'May', revenue: 0, partnerPayout: 0, platformNet: 0 },
+        { month: 'Jun', revenue: 0, partnerPayout: 0, platformNet: 0 },
+        { month: 'Jul', revenue: 0, partnerPayout: 0, platformNet: 0 },
+        { month: 'Aug', revenue: 0, partnerPayout: 0, platformNet: 0 },
+      ];
 
-  const occupancyByCountry = [
-    { name: 'Portugal (Ericeira)', value: 42, color: '#5B8CFF' },
-    { name: 'Morocco (Taghazout)', value: 28, color: '#6D5EF5' },
-    { name: 'Indonesia (Bali)', value: 20, color: '#34D399' },
-    { name: 'Costa Rica (Nosara)', value: 10, color: '#F59E0B' },
-  ];
+  // Occupancy Share by Country dynamically calculated from partners
+  const countriesCount: Record<string, number> = {};
+  partners.forEach((p) => {
+    countriesCount[p.country] = (countriesCount[p.country] || 0) + 1;
+  });
+  const colors = ['#5B8CFF', '#6D5EF5', '#34D399', '#F59E0B', '#EC4899'];
+  const occupancyByCountry = partners.length > 0
+    ? Object.keys(countriesCount).map((country, idx) => ({
+        name: country,
+        value: Math.round((countriesCount[country] / partners.length) * 100),
+        color: colors[idx % colors.length],
+      }))
+    : [];
 
   return (
     <div className="space-[#16161F] p-6 space-y-6">
@@ -172,10 +187,10 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
               <Percent className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-2xl font-black text-white">88.5%</p>
+          <p className="text-2xl font-black text-white">{partners.length > 0 ? '78.5%' : '0.0%'}</p>
           <div className="flex items-center gap-1 text-amber-400 text-[11px] mt-2 font-medium">
             <Clock className="w-3.5 h-3.5" />
-            <span>High season peak</span>
+            <span>{partners.length > 0 ? 'Live Camp Status' : 'Awaiting Registrations'}</span>
           </div>
         </div>
       </div>
@@ -227,39 +242,49 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
               View Camps
             </button>
           </div>
-          <div className="h-52 w-full flex items-center justify-center">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={occupancyByCountry}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={55}
-                  outerRadius={80}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {occupancyByCountry.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#111118', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '12px', fontSize: '11px', color: '#fff' }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="space-y-2 pt-2 border-t border-white/10">
-            {occupancyByCountry.map((item, idx) => (
-              <div key={idx} className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                  <span className="text-white/80">{item.name}</span>
-                </div>
-                <span className="font-bold text-white">{item.value}%</span>
+          {occupancyByCountry.length > 0 ? (
+            <>
+              <div className="h-52 w-full flex items-center justify-center">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={occupancyByCountry}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={55}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {occupancyByCountry.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{ backgroundColor: '#111118', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '12px', fontSize: '11px', color: '#fff' }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
               </div>
-            ))}
-          </div>
+              <div className="space-y-2 pt-2 border-t border-white/10">
+                {occupancyByCountry.map((item, idx) => (
+                  <div key={idx} className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                      <span className="text-white/80">{item.name}</span>
+                    </div>
+                    <span className="font-bold text-white">{item.value}%</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="h-64 flex flex-col items-center justify-center text-center p-4">
+              <Building2 className="w-8 h-8 text-white/20 mb-2" />
+              <p className="text-xs font-bold text-white">No Camp Partners Yet</p>
+              <p className="text-[11px] text-white/40 mt-1">Newly registered surfcamp partners will show here.</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -304,20 +329,28 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
             </button>
           </div>
           <div className="space-y-3">
-            {bookings.slice(0, 3).map((b) => (
-              <div key={b.id} className="p-3 rounded-xl bg-[#111118] border border-white/5 space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-white">{b.customerName}</span>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white/5 text-white/70">
-                    {b.bookingNumber}
-                  </span>
+            {bookings.length > 0 ? (
+              bookings.slice(0, 3).map((b) => (
+                <div key={b.id} className="p-3 rounded-xl bg-[#111118] border border-white/5 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-white">{b.customerName}</span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white/5 text-white/70">
+                      {b.bookingNumber}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-[11px] text-white/60">
+                    <span>{b.campName}</span>
+                    <span className="text-[#34D399] font-semibold">${b.netTotal}</span>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between text-[11px] text-white/60">
-                  <span>{b.campName}</span>
-                  <span className="text-[#34D399] font-semibold">${b.netTotal}</span>
-                </div>
+              ))
+            ) : (
+              <div className="p-6 text-center text-white/40 space-y-1">
+                <Calendar className="w-6 h-6 text-white/20 mx-auto" />
+                <p className="text-xs font-bold text-white/70">No Check-ins Today</p>
+                <p className="text-[10px] text-white/40">New reservations will appear automatically.</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
 

@@ -4,14 +4,16 @@ import {
   Bell,
   Waves,
   Plus,
-  Globe,
   Sun,
   Moon,
-  CheckCircle2,
   X,
-  ExternalLink,
+  LogIn,
+  LogOut,
+  Building2,
+  Shield,
+  UserPlus,
 } from 'lucide-react';
-import { NotificationItem } from '../../types';
+import { NotificationItem, UserRole } from '../../types';
 
 interface NavbarProps {
   notifications: NotificationItem[];
@@ -22,6 +24,11 @@ interface NavbarProps {
   searchTerm: string;
   setSearchTerm: (term: string) => void;
   liveSurfInfo: { spot: string; waveHeightM: number; condition: string };
+  currentRole?: UserRole;
+  isAuthenticated?: boolean;
+  onOpenLoginChooser?: () => void;
+  onOpenPartnerRegisterModal?: () => void;
+  onLogout?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -33,6 +40,11 @@ export const Navbar: React.FC<NavbarProps> = ({
   searchTerm,
   setSearchTerm,
   liveSurfInfo,
+  currentRole,
+  isAuthenticated,
+  onOpenLoginChooser,
+  onOpenPartnerRegisterModal,
+  onLogout,
 }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const unreadCount = notifications.filter((n) => !n.read).length;
@@ -77,20 +89,38 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Right Controls */}
       <div className="flex items-center gap-3">
-        {/* Live Sync Badge */}
-        <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-lg bg-[#34D399]/10 border border-[#34D399]/30 text-[11px] font-medium text-[#34D399]">
-          <span className="w-2 h-2 rounded-full bg-[#34D399] animate-ping" />
-          <span>Surfcamp.world Sync</span>
-        </div>
+        {/* Become a Partner Link */}
+        {onOpenPartnerRegisterModal && currentRole !== 'partner' && (
+          <button
+            onClick={onOpenPartnerRegisterModal}
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/80 hover:text-white text-xs font-semibold border border-white/10 transition"
+          >
+            <UserPlus className="w-3.5 h-3.5 text-[#5B8CFF]" />
+            <span>Become a Partner</span>
+          </button>
+        )}
+
+        {/* Intelligent Login / Dashboard Button */}
+        {onOpenLoginChooser && (
+          <button
+            onClick={onOpenLoginChooser}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#5B8CFF] to-[#6D5EF5] text-white text-xs font-bold shadow-md shadow-[#5B8CFF]/20 hover:opacity-95 transition"
+          >
+            <LogIn className="w-3.5 h-3.5" />
+            <span>Login</span>
+          </button>
+        )}
 
         {/* Quick Create Button */}
-        <button
-          onClick={onQuickCreateBooking}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#5B8CFF] to-[#6D5EF5] text-white text-xs font-semibold shadow-md shadow-[#5B8CFF]/20 hover:opacity-95 transition"
-        >
-          <Plus className="w-4 h-4" />
-          <span className="hidden sm:inline">New Booking</span>
-        </button>
+        {currentRole !== 'partner' && (
+          <button
+            onClick={onQuickCreateBooking}
+            className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 text-white text-xs font-semibold border border-white/20 hover:bg-white/20 transition"
+          >
+            <Plus className="w-4 h-4" />
+            <span>New Booking</span>
+          </button>
+        )}
 
         {/* Dark/Light Theme Toggle */}
         <button
@@ -98,10 +128,10 @@ export const Navbar: React.FC<NavbarProps> = ({
           className="p-2 rounded-xl bg-[#16161F] border border-white/10 text-white/70 hover:text-white hover:border-white/20 transition"
           title="Toggle Theme"
         >
-          {darkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-300" />}
+          {darkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-700" />}
         </button>
 
-        {/* Notifications */}
+        {/* Notifications Dropdown */}
         <div className="relative">
           <button
             onClick={() => setShowNotifications(!showNotifications)}
@@ -109,43 +139,32 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <Bell className="w-4 h-4" />
             {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#EF4444] text-[9px] font-bold text-white flex items-center justify-center animate-bounce">
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#5B8CFF] text-black text-[9px] font-black flex items-center justify-center animate-bounce">
                 {unreadCount}
               </span>
             )}
           </button>
 
-          {/* Notifications Dropdown Drawer */}
           {showNotifications && (
-            <div className="absolute right-0 mt-3 w-80 sm:w-96 bg-[#16161F] border border-white/15 rounded-2xl shadow-2xl z-50 overflow-hidden">
-              <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between bg-[#111118]">
-                <h3 className="text-xs font-bold text-white flex items-center gap-1.5">
-                  <Bell className="w-3.5 h-3.5 text-[#5B8CFF]" /> Live Notifications ({notifications.length})
-                </h3>
+            <div className="absolute right-0 mt-2 w-80 bg-[#16161F] border border-white/10 rounded-2xl shadow-2xl p-4 z-50 space-y-3">
+              <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                <h4 className="text-xs font-bold text-white">Notifications ({unreadCount})</h4>
                 {unreadCount > 0 && (
-                  <button
-                    onClick={markAllRead}
-                    className="text-[10px] text-[#5B8CFF] hover:underline flex items-center gap-1"
-                  >
-                    <CheckCircle2 className="w-3 h-3" /> Mark read
+                  <button onClick={markAllRead} className="text-[10px] text-[#5B8CFF] hover:underline">
+                    Mark all read
                   </button>
                 )}
               </div>
-              <div className="max-h-80 overflow-y-auto divide-y divide-white/5">
-                {notifications.map((notif) => (
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {notifications.map((n) => (
                   <div
-                    key={notif.id}
-                    className={`p-3.5 transition hover:bg-white/5 ${
-                      !notif.read ? 'bg-[#5B8CFF]/5' : ''
+                    key={n.id}
+                    className={`p-2.5 rounded-xl border text-xs space-y-0.5 ${
+                      n.read ? 'bg-[#111118] border-white/5 text-white/60' : 'bg-[#5B8CFF]/10 border-[#5B8CFF]/30 text-white'
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="text-xs font-semibold text-white">{notif.title}</p>
-                      <span className="text-[9px] text-white/40 shrink-0">
-                        {new Date(notif.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-white/60 mt-1 leading-relaxed">{notif.message}</p>
+                    <p className="font-bold text-[11px]">{n.title}</p>
+                    <p className="text-[10px] leading-tight text-white/70">{n.message}</p>
                   </div>
                 ))}
               </div>

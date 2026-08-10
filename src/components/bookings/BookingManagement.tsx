@@ -192,6 +192,23 @@ export const BookingManagement: React.FC<BookingManagementProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5 text-xs">
+              {filteredBookings.length === 0 && (
+                <tr>
+                  <td colSpan={9} className="p-12 text-center text-white/50">
+                    <Calendar className="w-10 h-10 text-white/20 mx-auto mb-3" />
+                    <p className="font-bold text-white text-sm">No Bookings Recorded Yet</p>
+                    <p className="text-xs text-white/40 max-w-sm mx-auto mt-1">
+                      New reservations submitted on your website or received via API webhooks will appear here instantly.
+                    </p>
+                    <button
+                      onClick={() => setShowCreateModal(true)}
+                      className="mt-4 px-4 py-2 bg-gradient-to-r from-[#5B8CFF] to-[#6D5EF5] text-white rounded-xl text-xs font-semibold shadow-lg"
+                    >
+                      Manual Booking Entry
+                    </button>
+                  </td>
+                </tr>
+              )}
               {filteredBookings.map((b) => (
                 <tr key={b.id} className="hover:bg-white/5 transition">
                   <td className="p-4 font-mono font-bold text-[#5B8CFF]">{b.bookingNumber}</td>

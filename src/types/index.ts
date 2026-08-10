@@ -1,4 +1,5 @@
 export type UserRole =
+  | 'admin'
   | 'super_admin'
   | 'owner'
   | 'staff'
@@ -16,12 +17,30 @@ export interface UserProfile {
   phone?: string;
 }
 
+export interface CampPackage {
+  id: string;
+  partnerId: string;
+  name: string;
+  description: string;
+  pricePerNight: number;
+  durationDays: number;
+  maxGuests: number;
+  activities: string[];
+  inclusions: string[];
+  exclusions: string[];
+  facilities: string[];
+  status: 'pending_approval' | 'approved' | 'rejected';
+}
+
 export interface Partner {
   id: string;
   companyName: string;
   ownerName: string;
   country: string;
   location: string;
+  businessAddress?: string;
+  taxVatId?: string;
+  website?: string;
   lat: number;
   lng: number;
   bankDetails: {
@@ -30,16 +49,31 @@ export interface Partner {
     swift: string;
     accountHolder: string;
   };
-  commissionRate: number; // default 0.20 (20% to platform, 80% to partner)
+  commissionRate: number; // default 0.20 (20% platform, 80% partner)
   contractStatus: 'active' | 'pending' | 'review' | 'terminated';
+  approvalStatus: 'pending_approval' | 'approved' | 'rejected';
   rating: number;
   totalBookings: number;
   totalRevenue: number;
   totalPayout: number;
-  photos: string[];
+  photos: string[]; // Up to 8 photos
   phone: string;
   email: string;
   description: string;
+  packages?: CampPackage[];
+  createdAt?: string;
+}
+
+export interface PartnerStats {
+  partnerId: string;
+  campName: string;
+  totalBookings: number;
+  confirmedBookings: number;
+  pendingBookings: number;
+  cancelledBookings: number;
+  totalRevenue: number; // Partner net revenue
+  partnerEarnings: number; // 80% share
+  pendingEarnings: number;
 }
 
 export interface Accommodation {
@@ -75,6 +109,7 @@ export interface Customer {
   loyaltyTier: 'Standard' | 'Silver' | 'Gold' | 'VIP';
   avatar: string;
   createdAt: string;
+  partnerId?: string;
 }
 
 export interface BookingExtra {
